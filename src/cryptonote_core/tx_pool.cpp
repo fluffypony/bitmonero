@@ -48,6 +48,34 @@
 #include "warnings.h"
 #include "crypto/hash.h"
 
+#include <boost/chrono.hpp>
+
+class performance_timer
+{
+public:
+  typedef boost::chrono::high_resolution_clock clock;
+
+  performance_timer()
+  {
+    m_base = clock::now();
+  }
+
+  void start()
+  {
+    m_start = clock::now();
+  }
+
+  int elapsed_ms()
+  {
+    clock::duration elapsed = clock::now() - m_start;
+    return static_cast<int>(boost::chrono::duration_cast<boost::chrono::milliseconds>(elapsed).count());
+  }
+
+private:
+  clock::time_point m_base;
+  clock::time_point m_start;
+};
+
 DISABLE_VS_WARNINGS(4244 4345 4503) //'boost::foreach_detail_::or_' : decorated name length exceeded, name was truncated
 
 namespace cryptonote
@@ -89,6 +117,10 @@ namespace cryptonote
   //---------------------------------------------------------------------------------
   bool tx_memory_pool::add_tx(const transaction &tx, /*const crypto::hash& tx_prefix_hash,*/ const crypto::hash &id, size_t blob_size, tx_verification_context& tvc, bool kept_by_block, bool relayed, uint8_t version)
   {
+
+    performance_timer timer;
+    timer.start();
+
     // we do not accept transactions that timed out before, unless they're
     // kept_by_block
     if (!kept_by_block && m_timed_out_transactions.find(id) != m_timed_out_transactions.end())
@@ -96,6 +128,7 @@ namespace cryptonote
       // not clear if we should set that, since verifivation (sic) did not fail before, since
       // the tx was accepted before timing out.
       tvc.m_verifivation_failed = true;
+      LOG_PRINT_L0("tx verification: failed, elapsed ms: " << timer.elapsed_ms());
       return false;
     }
 
@@ -103,6 +136,7 @@ namespace cryptonote
     {
       tvc.m_verifivation_failed = true;
       tvc.m_invalid_input = true;
+      LOG_PRINT_L0("tx verification: failed, elapsed ms: " << timer.elapsed_ms());
       return false;
     }
 
@@ -110,6 +144,7 @@ namespace cryptonote
     if(!get_inputs_money_amount(tx, inputs_amount))
     {
       tvc.m_verifivation_failed = true;
+      LOG_PRINT_L0("tx verification: failed, elapsed ms: " << timer.elapsed_ms());
       return false;
     }
 
@@ -120,6 +155,7 @@ namespace cryptonote
       LOG_PRINT_L1("transaction use more money then it has: use " << print_money(outputs_amount) << ", have " << print_money(inputs_amount));
       tvc.m_verifivation_failed = true;
       tvc.m_overspend = true;
+      LOG_PRINT_L0("tx verification: failed, elapsed ms: " << timer.elapsed_ms());
       return false;
     }
 
@@ -133,6 +169,7 @@ namespace cryptonote
       LOG_PRINT_L1("transaction fee is not enough: " << print_money(fee) << ", minimum fee: " << print_money(needed_fee));
       tvc.m_verifivation_failed = true;
       tvc.m_fee_too_low = true;
+      LOG_PRINT_L0("tx verification: failed, elapsed ms: " << timer.elapsed_ms());
       return false;
     }
 
@@ -142,6 +179,7 @@ namespace cryptonote
       LOG_PRINT_L1("transaction is too big: " << blob_size << " bytes, maximum size: " << tx_size_limit);
       tvc.m_verifivation_failed = true;
       tvc.m_too_big = true;
+      LOG_PRINT_L0("tx verification: failed, elapsed ms: " << timer.elapsed_ms());
       return false;
     }
 
@@ -155,6 +193,7 @@ namespace cryptonote
         LOG_PRINT_L1("Transaction with id= "<< id << " used already spent key images");
         tvc.m_verifivation_failed = true;
         tvc.m_double_spend = true;
+        LOG_PRINT_L0("tx verification: failed, elapsed ms: " << timer.elapsed_ms());
         return false;
       }
     }
@@ -164,6 +203,7 @@ namespace cryptonote
       LOG_PRINT_L1("Transaction with id= "<< id << " has at least one invalid outout");
       tvc.m_verifivation_failed = true;
       tvc.m_invalid_output = true;
+      LOG_PRINT_L0("tx verification: failed, elapsed ms: " << timer.elapsed_ms());
       return false;
     }
 
@@ -198,6 +238,7 @@ namespace cryptonote
       {
         LOG_PRINT_L1("tx used wrong inputs, rejected");
         tvc.m_verifivation_failed = true;
+        LOG_PRINT_L0("tx verification: failed, elapsed ms: " << timer.elapsed_ms());
         return false;
       }
     }else
@@ -240,6 +281,7 @@ namespace cryptonote
 
     m_txs_by_fee.emplace((double)blob_size / fee, id);
 
+    LOG_PRINT_L0("tx verification: passed, elapsed ms: " << timer.elapsed_ms());
     return true;
   }
   //---------------------------------------------------------------------------------
