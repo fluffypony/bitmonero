@@ -269,10 +269,10 @@ namespace nodetool
     // These functions only return information for the "public" zone
     virtual uint64_t get_public_connections_count();
     size_t get_public_outgoing_connections_count();
-    size_t get_public_white_peers_count();
-    size_t get_public_gray_peers_count();
-    void get_public_peerlist(std::vector<peerlist_entry>& gray, std::vector<peerlist_entry>& white);
-    void get_peerlist(std::vector<peerlist_entry>& gray, std::vector<peerlist_entry>& white);
+    size_t get_public_recent_peers_count();
+    size_t get_public_known_peers_count();
+    void get_public_peerlist(std::vector<peerlist_entry>& known, std::vector<peerlist_entry>& recent);
+    void get_peerlist(std::vector<peerlist_entry>& known, std::vector<peerlist_entry>& recent);
 
     void change_max_out_public_peers(size_t count);
     uint32_t get_max_out_public_peers() const;
@@ -315,7 +315,7 @@ namespace nodetool
       CHAIN_INVOKE_MAP_TO_OBJ_FORCE_CONTEXT(m_payload_handler, typename t_payload_net_handler::connection_context&)
     END_INVOKE_MAP2()
 
-    enum PeerType { anchor = 0, white, gray };
+    enum PeerType { anchor = 0, recent, known };
 
     //----------------- commands handlers ----------------------------------------------
     int handle_handshake(int command, typename COMMAND_HANDSHAKE::request& arg, typename COMMAND_HANDSHAKE::response& rsp, p2p_connection_context& context);
@@ -362,8 +362,8 @@ namespace nodetool
     bool do_peer_timed_sync(const epee::net_utils::connection_context_base& context, peerid_type peer_id);
 
     bool make_new_connection_from_anchor_peerlist(const std::vector<anchor_peerlist_entry>& anchor_peerlist);
-    bool make_new_connection_from_peerlist(network_zone& zone, bool use_white_list);
-    bool try_to_connect_and_handshake_with_new_peer(const epee::net_utils::network_address& na, bool just_take_peerlist = false, uint64_t last_seen_stamp = 0, PeerType peer_type = white, uint64_t first_seen_stamp = 0);
+    bool make_new_connection_from_peerlist(network_zone& zone, bool use_recent_list);
+    bool try_to_connect_and_handshake_with_new_peer(const epee::net_utils::network_address& na, bool just_take_peerlist = false, uint64_t last_seen_stamp = 0, PeerType peer_type = recent, uint64_t first_seen_stamp = 0);
     size_t get_random_index_with_fixed_probability(size_t max_index);
     bool is_peer_used(const peerlist_entry& peer);
     bool is_peer_used(const anchor_peerlist_entry& peer);
@@ -408,7 +408,7 @@ namespace nodetool
     size_t get_outgoing_connections_count(network_zone&);
 
     bool check_connection_and_handshake_with_peer(const epee::net_utils::network_address& na, uint64_t last_seen_stamp);
-    bool gray_peerlist_housekeeping();
+    bool known_peerlist_housekeeping();
     bool check_incoming_connections();
 
     void kill() { ///< will be called e.g. from deinit()
@@ -462,7 +462,7 @@ namespace nodetool
     epee::math_helper::once_a_time_seconds<P2P_DEFAULT_HANDSHAKE_INTERVAL> m_peer_handshake_idle_maker_interval;
     epee::math_helper::once_a_time_seconds<1> m_connections_maker_interval;
     epee::math_helper::once_a_time_seconds<60*30, false> m_peerlist_store_interval;
-    epee::math_helper::once_a_time_seconds<60> m_gray_peerlist_housekeeping_interval;
+    epee::math_helper::once_a_time_seconds<60> m_known_peerlist_housekeeping_interval;
     epee::math_helper::once_a_time_seconds<3600, false> m_incoming_connections_interval;
 
     std::list<epee::net_utils::network_address>   m_priority_peers;

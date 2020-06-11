@@ -188,8 +188,8 @@ namespace cryptonote
     COMMAND_RPC_GET_PUBLIC_NODES::request request;
     COMMAND_RPC_GET_PUBLIC_NODES::response response;
 
-    request.gray = true;
-    request.white = true;
+    request.known = true;
+    request.recent = true;
     if (!on_get_public_nodes(request, response) || response.status != CORE_RPC_STATUS_OK)
     {
       return {};
@@ -197,7 +197,7 @@ namespace cryptonote
 
     std::map<std::string, bool> result;
 
-    const auto append = [&result, &credits_per_hash_threshold](const std::vector<public_node> &nodes, bool white) {
+    const auto append = [&result, &credits_per_hash_threshold](const std::vector<public_node> &nodes, bool recent) {
       for (const auto &node : nodes)
       {
         const bool rpc_payment_enabled = credits_per_hash_threshold > 0;
@@ -205,13 +205,13 @@ namespace cryptonote
         if (!node_rpc_payment_enabled ||
             (rpc_payment_enabled && node.rpc_credits_per_hash >= credits_per_hash_threshold))
         {
-          result.insert(std::make_pair(node.host + ":" + std::to_string(node.rpc_port), white));
+          result.insert(std::make_pair(node.host + ":" + std::to_string(node.rpc_port), recent));
         }
       }
     };
 
-    append(response.white, true);
-    append(response.gray, false);
+    append(response.recent, true);
+    append(response.known, false);
 
     return result;
   }
@@ -449,8 +449,8 @@ namespace cryptonote
     res.outgoing_connections_count = restricted ? 0 : m_p2p.get_public_outgoing_connections_count();
     res.incoming_connections_count = restricted ? 0 : (total_conn - res.outgoing_connections_count);
     res.rpc_connections_count = restricted ? 0 : get_connections_count();
-    res.white_peerlist_size = restricted ? 0 : m_p2p.get_public_white_peers_count();
-    res.grey_peerlist_size = restricted ? 0 : m_p2p.get_public_gray_peers_count();
+    res.recent_peerlist_size = restricted ? 0 : m_p2p.get_public_recent_peers_count();
+    res.known_peerlist_size = restricted ? 0 : m_p2p.get_public_known_peers_count();
 
     cryptonote::network_type net_type = nettype();
     res.mainnet = net_type == MAINNET;
@@ -1322,40 +1322,40 @@ namespace cryptonote
   bool core_rpc_server::on_get_peer_list(const COMMAND_RPC_GET_PEER_LIST::request& req, COMMAND_RPC_GET_PEER_LIST::response& res, const connection_context *ctx)
   {
     RPC_TRACKER(get_peer_list);
-    std::vector<nodetool::peerlist_entry> white_list;
-    std::vector<nodetool::peerlist_entry> gray_list;
+    std::vector<nodetool::peerlist_entry> recent_list;
+    std::vector<nodetool::peerlist_entry> known_list;
 
     if (req.public_only)
     {
-      m_p2p.get_public_peerlist(gray_list, white_list);
+      m_p2p.get_public_peerlist(known_list, recent_list);
     }
     else
     {
-      m_p2p.get_peerlist(gray_list, white_list);
+      m_p2p.get_peerlist(known_list, recent_list);
     }
 
-    for (auto & entry : white_list)
+    for (auto & entry : recent_list)
     {
       if (entry.adr.get_type_id() == epee::net_utils::ipv4_network_address::get_type_id())
-        res.white_list.emplace_back(entry.id, entry.adr.as<epee::net_utils::ipv4_network_address>().ip(),
+        res.recent_list.emplace_back(entry.id, entry.adr.as<epee::net_utils::ipv4_network_address>().ip(),
             entry.adr.as<epee::net_utils::ipv4_network_address>().port(), entry.last_seen, entry.pruning_seed, entry.rpc_port, entry.rpc_credits_per_hash);
       else if (entry.adr.get_type_id() == epee::net_utils::ipv6_network_address::get_type_id())
-        res.white_list.emplace_back(entry.id, entry.adr.as<epee::net_utils::ipv6_network_address>().host_str(),
+        res.recent_list.emplace_back(entry.id, entry.adr.as<epee::net_utils::ipv6_network_address>().host_str(),
             entry.adr.as<epee::net_utils::ipv6_network_address>().port(), entry.last_seen, entry.pruning_seed, entry.rpc_port, entry.rpc_credits_per_hash);
       else
-        res.white_list.emplace_back(entry.id, entry.adr.str(), entry.last_seen, entry.pruning_seed, entry.rpc_port, entry.rpc_credits_per_hash);
+        res.recent_list.emplace_back(entry.id, entry.adr.str(), entry.last_seen, entry.pruning_seed, entry.rpc_port, entry.rpc_credits_per_hash);
     }
 
-    for (auto & entry : gray_list)
+    for (auto & entry : known_list)
     {
       if (entry.adr.get_type_id() == epee::net_utils::ipv4_network_address::get_type_id())
-        res.gray_list.emplace_back(entry.id, entry.adr.as<epee::net_utils::ipv4_network_address>().ip(),
+        res.known_list.emplace_back(entry.id, entry.adr.as<epee::net_utils::ipv4_network_address>().ip(),
             entry.adr.as<epee::net_utils::ipv4_network_address>().port(), entry.last_seen, entry.pruning_seed, entry.rpc_port, entry.rpc_credits_per_hash);
       else if (entry.adr.get_type_id() == epee::net_utils::ipv6_network_address::get_type_id())
-        res.gray_list.emplace_back(entry.id, entry.adr.as<epee::net_utils::ipv6_network_address>().host_str(),
+        res.known_list.emplace_back(entry.id, entry.adr.as<epee::net_utils::ipv6_network_address>().host_str(),
             entry.adr.as<epee::net_utils::ipv6_network_address>().port(), entry.last_seen, entry.pruning_seed, entry.rpc_port, entry.rpc_credits_per_hash);
       else
-        res.gray_list.emplace_back(entry.id, entry.adr.str(), entry.last_seen, entry.pruning_seed, entry.rpc_port, entry.rpc_credits_per_hash);
+        res.known_list.emplace_back(entry.id, entry.adr.str(), entry.last_seen, entry.pruning_seed, entry.rpc_port, entry.rpc_credits_per_hash);
     }
 
     res.status = CORE_RPC_STATUS_OK;
@@ -1389,13 +1389,13 @@ namespace cryptonote
       }
     };
 
-    if (req.white)
+    if (req.recent)
     {
-      collect(peer_list_res.white_list, res.white);
+      collect(peer_list_res.recent_list, res.recent);
     }
-    if (req.gray)
+    if (req.known)
     {
-      collect(peer_list_res.gray_list, res.gray);
+      collect(peer_list_res.known_list, res.known);
     }
 
     return true;

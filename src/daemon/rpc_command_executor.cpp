@@ -186,7 +186,7 @@ t_rpc_command_executor::~t_rpc_command_executor()
   }
 }
 
-bool t_rpc_command_executor::print_peer_list(bool white, bool gray, size_t limit, bool pruned_only, bool publicrpc_only) {
+bool t_rpc_command_executor::print_peer_list(bool recent, bool known, size_t limit, bool pruned_only, bool publicrpc_only) {
   cryptonote::COMMAND_RPC_GET_PEER_LIST::request req;
   cryptonote::COMMAND_RPC_GET_PEER_LIST::response res;
 
@@ -207,23 +207,23 @@ bool t_rpc_command_executor::print_peer_list(bool white, bool gray, size_t limit
     }
   }
 
-  if (white)
+  if (recent)
   {
-    auto peer = res.white_list.cbegin();
-    const auto end = limit ? peer + std::min(limit, res.white_list.size()) : res.white_list.cend();
+    auto peer = res.recent_list.cbegin();
+    const auto end = limit ? peer + std::min(limit, res.recent_list.size()) : res.recent_list.cend();
     for (; peer != end; ++peer)
     {
-      print_peer("white", *peer, pruned_only, publicrpc_only);
+      print_peer("recent", *peer, pruned_only, publicrpc_only);
     }
   }
 
-  if (gray)
+  if (known)
   {
-    auto peer = res.gray_list.cbegin();
-    const auto end = limit ? peer + std::min(limit, res.gray_list.size()) : res.gray_list.cend();
+    auto peer = res.known_list.cbegin();
+    const auto end = limit ? peer + std::min(limit, res.known_list.size()) : res.known_list.cend();
     for (; peer != end; ++peer)
     {
-      print_peer("gray", *peer, pruned_only, publicrpc_only);
+      print_peer("known", *peer, pruned_only, publicrpc_only);
     }
   }
 
@@ -255,8 +255,8 @@ bool t_rpc_command_executor::print_peer_list_stats() {
   }
 
   tools::msg_writer()
-    << "White list size: " << res.white_list.size() << "/" << P2P_LOCAL_WHITE_PEERLIST_LIMIT << " (" << res.white_list.size() *  100.0 / P2P_LOCAL_WHITE_PEERLIST_LIMIT << "%)" << std::endl
-    << "Gray list size: " << res.gray_list.size() << "/" << P2P_LOCAL_GRAY_PEERLIST_LIMIT << " (" << res.gray_list.size() *  100.0 / P2P_LOCAL_GRAY_PEERLIST_LIMIT << "%)";
+    << "Recent peer list size: " << res.recent_list.size() << "/" << P2P_LOCAL_RECENT_PEERS_LIMIT << " (" << res.recent_list.size() *  100.0 / P2P_LOCAL_RECENT_PEERS_LIMIT << "%)" << std::endl
+    << "Known peers list size: " << res.known_list.size() << "/" << P2P_LOCAL_KNOWN_PEERS_LIMIT << " (" << res.known_list.size() *  100.0 / P2P_LOCAL_KNOWN_PEERS_LIMIT << "%)";
 
   return true;
 }

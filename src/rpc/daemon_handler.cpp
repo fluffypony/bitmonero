@@ -522,9 +522,9 @@ namespace rpc
     res.info.outgoing_connections_count = m_p2p.get_public_outgoing_connections_count();
     res.info.incoming_connections_count = total_conn - res.info.outgoing_connections_count;
 
-    res.info.white_peerlist_size = m_p2p.get_public_white_peers_count();
+    res.info.recent_peerlist_size = m_p2p.get_public_recent_peers_count();
 
-    res.info.grey_peerlist_size = m_p2p.get_public_gray_peers_count();
+    res.info.known_peerlist_size = m_p2p.get_public_known_peers_count();
 
     res.info.mainnet = m_core.get_nettype() == MAINNET;
     res.info.testnet = m_core.get_nettype() == TESTNET;

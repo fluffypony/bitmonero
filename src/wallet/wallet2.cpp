@@ -13843,13 +13843,13 @@ uint64_t wallet2::get_bytes_received() const
   return m_http_client->get_bytes_received();
 }
 //----------------------------------------------------------------------------------------------------
-std::vector<cryptonote::public_node> wallet2::get_public_nodes(bool white_only)
+std::vector<cryptonote::public_node> wallet2::get_public_nodes(bool recent_only)
 {
   cryptonote::COMMAND_RPC_GET_PUBLIC_NODES::request req = AUTO_VAL_INIT(req);
   cryptonote::COMMAND_RPC_GET_PUBLIC_NODES::response res = AUTO_VAL_INIT(res);
 
-  req.white = true;
-  req.gray = !white_only;
+  req.recent = true;
+  req.known = !recent_only;
 
   {
     const boost::lock_guard<boost::recursive_mutex> lock{m_daemon_rpc_mutex};
@@ -13858,9 +13858,9 @@ std::vector<cryptonote::public_node> wallet2::get_public_nodes(bool white_only)
   }
 
   std::vector<cryptonote::public_node> nodes;
-  nodes = res.white;
-  nodes.reserve(nodes.size() + res.gray.size());
-  std::copy(res.gray.begin(), res.gray.end(), std::back_inserter(nodes));
+  nodes = res.recent;
+  nodes.reserve(nodes.size() + res.known.size());
+  std::copy(res.known.begin(), res.known.end(), std::back_inserter(nodes));
   return nodes;
 }
 //----------------------------------------------------------------------------------------------------

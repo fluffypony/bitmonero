@@ -797,31 +797,31 @@ namespace nodetool
     }
 
     for(const auto& p: m_command_line_peers)
-      m_network_zones.at(p.adr.get_zone()).m_peerlist.append_with_peer_white(p);
+      m_network_zones.at(p.adr.get_zone()).m_peerlist.append_with_peer_recent(p);
 
 // all peers are now setup
 #ifdef CRYPTONOTE_PRUNING_DEBUG_SPOOF_SEED
     for (auto& zone : m_network_zones)
     {
       std::list<peerlist_entry> plw;
-      while (zone.second.m_peerlist.get_white_peers_count())
+      while (zone.second.m_peerlist.get_recent_peers_count())
       {
         plw.push_back(peerlist_entry());
-        zone.second.m_peerlist.get_white_peer_by_index(plw.back(), 0);
-        zone.second.m_peerlist.remove_from_peer_white(plw.back());
+        zone.second.m_peerlist.get_recent_peer_by_index(plw.back(), 0);
+        zone.second.m_peerlist.remove_from_peer_recent(plw.back());
       }
       for (auto &e:plw)
-        zone.second.m_peerlist.append_with_peer_white(e);
+        zone.second.m_peerlist.append_with_peer_recent(e);
 
       std::list<peerlist_entry> plg;
-      while (zone.second.m_peerlist.get_gray_peers_count())
+      while (zone.second.m_peerlist.get_known_peers_count())
       {
         plg.push_back(peerlist_entry());
-        zone.second.m_peerlist.get_gray_peer_by_index(plg.back(), 0);
-        zone.second.m_peerlist.remove_from_peer_gray(plg.back());
+        zone.second.m_peerlist.get_known_peer_by_index(plg.back(), 0);
+        zone.second.m_peerlist.remove_from_peer_known(plg.back());
       }
       for (auto &e:plg)
-        zone.second.m_peerlist.append_with_peer_gray(e);
+        zone.second.m_peerlist.append_with_peer_known(e);
     }
 #endif
 
@@ -1302,7 +1302,7 @@ namespace nodetool
     pe_local.pruning_seed = con->m_pruning_seed;
     pe_local.rpc_port = con->m_rpc_port;
     pe_local.rpc_credits_per_hash = con->m_rpc_credits_per_hash;
-    zone.m_peerlist.append_with_peer_white(pe_local);
+    zone.m_peerlist.append_with_peer_recent(pe_local);
     //update last seen and push it to peerlist manager
 
     anchor_peerlist_entry ape = AUTO_VAL_INIT(ape);
@@ -1415,7 +1415,7 @@ namespace nodetool
   }
   //-----------------------------------------------------------------------------------
   template<class t_payload_net_handler>
-  bool node_server<t_payload_net_handler>::make_new_connection_from_peerlist(network_zone& zone, bool use_white_list)
+  bool node_server<t_payload_net_handler>::make_new_connection_from_peerlist(network_zone& zone, bool use_recent_list)
   {
     size_t max_random_index = 0;
 
@@ -1447,12 +1447,12 @@ namespace nodetool
       }
 
       std::deque<size_t> filtered;
-      const size_t limit = use_white_list ? 20 : std::numeric_limits<size_t>::max();
+      const size_t limit = use_recent_list ? 20 : std::numeric_limits<size_t>::max();
       for (int step = 0; step < 2; ++step)
       {
         bool skip_duplicate_class_B = step == 0;
         size_t idx = 0, skipped = 0;
-        zone.m_peerlist.foreach (use_white_list, [&classB, &filtered, &idx, &skipped, skip_duplicate_class_B, limit, next_needed_pruning_stripe](const peerlist_entry &pe){
+        zone.m_peerlist.foreach (use_recent_list, [&classB, &filtered, &idx, &skipped, skip_duplicate_class_B, limit, next_needed_pruning_stripe](const peerlist_entry &pe){
           if (filtered.size() >= limit)
             return false;
           bool skip = false;
@@ -1478,12 +1478,12 @@ namespace nodetool
       }
       if (filtered.empty())
       {
-        MDEBUG("No available peer in " << (use_white_list ? "white" : "gray") << " list filtered by " << next_needed_pruning_stripe);
+        MDEBUG("No available peer in " << (use_recent_list ? "recent" : "known") << " list filtered by " << next_needed_pruning_stripe);
         return false;
       }
-      if (use_white_list)
+      if (use_recent_list)
       {
-        // if using the white list, we first pick in the set of peers we've already been using earlier
+        // if using the recent list, we first pick in the set of peers we've already been using earlier
         random_index = get_random_index_with_fixed_probability(std::min<uint64_t>(filtered.size() - 1, 20));
         CRITICAL_REGION_LOCAL(m_used_stripe_peers_mutex);
         if (next_needed_pruning_stripe > 0 && next_needed_pruning_stripe <= (1ul << CRYPTONOTE_PRUNING_LOG_STRIPES) && !m_used_stripe_peers[next_needed_pruning_stripe-1].empty())
@@ -1493,7 +1493,7 @@ namespace nodetool
           for (size_t i = 0; i < filtered.size(); ++i)
           {
             peerlist_entry pe;
-            if (zone.m_peerlist.get_white_peer_by_index(pe, filtered[i]) && pe.adr == na)
+            if (zone.m_peerlist.get_recent_peer_by_index(pe, filtered[i]) && pe.adr == na)
             {
               MDEBUG("Reusing stripe " << next_needed_pruning_stripe << " peer " << pe.adr.str());
               random_index = i;
@@ -1507,7 +1507,7 @@ namespace nodetool
 
       CHECK_AND_ASSERT_MES(random_index < filtered.size(), false, "random_index < filtered.size() failed!!");
       random_index = filtered[random_index];
-      CHECK_AND_ASSERT_MES(random_index < (use_white_list ? zone.m_peerlist.get_white_peers_count() : zone.m_peerlist.get_gray_peers_count()),
+      CHECK_AND_ASSERT_MES(random_index < (use_recent_list ? zone.m_peerlist.get_recent_peers_count() : zone.m_peerlist.get_known_peers_count()),
           false, "random_index < peers size failed!!");
 
       if(tried_peers.count(random_index))
@@ -1515,12 +1515,12 @@ namespace nodetool
 
       tried_peers.insert(random_index);
       peerlist_entry pe = AUTO_VAL_INIT(pe);
-      bool r = use_white_list ? zone.m_peerlist.get_white_peer_by_index(pe, random_index):zone.m_peerlist.get_gray_peer_by_index(pe, random_index);
-      CHECK_AND_ASSERT_MES(r, false, "Failed to get random peer from peerlist(white:" << use_white_list << ")");
+      bool r = use_recent_list ? zone.m_peerlist.get_recent_peer_by_index(pe, random_index):zone.m_peerlist.get_known_peer_by_index(pe, random_index);
+      CHECK_AND_ASSERT_MES(r, false, "Failed to get random peer from peerlist(recent:" << use_recent_list << ")");
 
       ++try_count;
 
-      _note("Considering connecting (out) to " << (use_white_list ? "white" : "gray") << " list peer: " <<
+      _note("Considering connecting (out) to " << (use_recent_list ? "recent" : "known") << " list peer: " <<
           peerid_to_string(pe.id) << " " << pe.adr.str() << ", pruning seed " << epee::string_tools::to_string_hex(pe.pruning_seed) <<
           " (stripe " << next_needed_pruning_stripe << " needed)");
 
@@ -1537,10 +1537,10 @@ namespace nodetool
 
       MDEBUG("Selected peer: " << peerid_to_string(pe.id) << " " << pe.adr.str()
                     << ", pruning seed " << epee::string_tools::to_string_hex(pe.pruning_seed) << " "
-                    << "[peer_list=" << (use_white_list ? white : gray)
+                    << "[peer_list=" << (use_recent_list ? recent : known)
                     << "] last_seen: " << (pe.last_seen ? epee::misc_utils::get_time_interval_string(time(NULL) - pe.last_seen) : "never"));
 
-      if(!try_to_connect_and_handshake_with_new_peer(pe.adr, false, pe.last_seen, use_white_list ? white : gray)) {
+      if(!try_to_connect_and_handshake_with_new_peer(pe.adr, false, pe.last_seen, use_recent_list ? recent : known)) {
         _note("Handshake failed");
         continue;
       }
@@ -1633,7 +1633,7 @@ namespace nodetool
     // Only have seeds in the public zone right now.
 
     size_t start_conn_count = get_public_outgoing_connections_count();
-    if(!get_public_white_peers_count() && !connect_to_seed())
+    if(!get_public_recent_peers_count() && !connect_to_seed())
     {
       return false;
     }
@@ -1642,31 +1642,31 @@ namespace nodetool
 
     for(auto& zone : m_network_zones)
     {
-      size_t base_expected_white_connections = (zone.second.m_config.m_net_config.max_out_connection_count*P2P_DEFAULT_WHITELIST_CONNECTIONS_PERCENT)/100;
+      size_t base_expected_recent_connections = (zone.second.m_config.m_net_config.max_out_connection_count*P2P_DEFAULT_RECENT_PEERS_CONNECTIONS_PERCENT)/100;
 
       size_t conn_count = get_outgoing_connections_count(zone.second);
       while(conn_count < zone.second.m_config.m_net_config.max_out_connection_count)
       {
-        const size_t expected_white_connections = m_payload_handler.get_next_needed_pruning_stripe().second ? zone.second.m_config.m_net_config.max_out_connection_count : base_expected_white_connections;
-        if(conn_count < expected_white_connections)
+        const size_t expected_recent_connections = m_payload_handler.get_next_needed_pruning_stripe().second ? zone.second.m_config.m_net_config.max_out_connection_count : base_expected_recent_connections;
+        if(conn_count < expected_recent_connections)
         {
           //start from anchor list
           while (get_outgoing_connections_count(zone.second) < P2P_DEFAULT_ANCHOR_CONNECTIONS_COUNT
             && make_expected_connections_count(zone.second, anchor, P2P_DEFAULT_ANCHOR_CONNECTIONS_COUNT));
-          //then do white list
-          while (get_outgoing_connections_count(zone.second) < expected_white_connections
-            && make_expected_connections_count(zone.second, white, expected_white_connections));
-          //then do grey list
+          //then do recent list
+          while (get_outgoing_connections_count(zone.second) < expected_recent_connections
+            && make_expected_connections_count(zone.second, recent, expected_recent_connections));
+          //then do known list
           while (get_outgoing_connections_count(zone.second) < zone.second.m_config.m_net_config.max_out_connection_count
-            && make_expected_connections_count(zone.second, gray, zone.second.m_config.m_net_config.max_out_connection_count));
+            && make_expected_connections_count(zone.second, known, zone.second.m_config.m_net_config.max_out_connection_count));
         }else
         {
-          //start from grey list
+          //start from known list
           while (get_outgoing_connections_count(zone.second) < zone.second.m_config.m_net_config.max_out_connection_count
-            && make_expected_connections_count(zone.second, gray, zone.second.m_config.m_net_config.max_out_connection_count));
-          //and then do white list
+            && make_expected_connections_count(zone.second, known, zone.second.m_config.m_net_config.max_out_connection_count));
+          //and then do recent list
           while (get_outgoing_connections_count(zone.second) < zone.second.m_config.m_net_config.max_out_connection_count
-            && make_expected_connections_count(zone.second, white, zone.second.m_config.m_net_config.max_out_connection_count));
+            && make_expected_connections_count(zone.second, recent, zone.second.m_config.m_net_config.max_out_connection_count));
         }
         if(zone.second.m_net_server.is_stop_signal_sent())
           return false;
@@ -1705,7 +1705,7 @@ namespace nodetool
     }
 
     size_t conn_count = get_outgoing_connections_count(zone);
-    //add new connections from white peers
+    //add new connections from recent peers
     if(conn_count < expected_connections)
     {
       if(zone.m_net_server.is_stop_signal_sent())
@@ -1717,11 +1717,11 @@ namespace nodetool
         return false;
       }
 
-      if (peer_type == white && !make_new_connection_from_peerlist(zone, true)) {
+      if (peer_type == recent && !make_new_connection_from_peerlist(zone, true)) {
         return false;
       }
 
-      if (peer_type == gray && !make_new_connection_from_peerlist(zone, false)) {
+      if (peer_type == known && !make_new_connection_from_peerlist(zone, false)) {
         return false;
       }
     }
@@ -1789,37 +1789,37 @@ namespace nodetool
   }
   //-----------------------------------------------------------------------------------
   template<class t_payload_net_handler>
-  size_t node_server<t_payload_net_handler>::get_public_white_peers_count()
+  size_t node_server<t_payload_net_handler>::get_public_recent_peers_count()
   {
     auto public_zone = m_network_zones.find(epee::net_utils::zone::public_);
     if (public_zone == m_network_zones.end())
       return 0;
-    return public_zone->second.m_peerlist.get_white_peers_count();
+    return public_zone->second.m_peerlist.get_recent_peers_count();
   }
   //-----------------------------------------------------------------------------------
   template<class t_payload_net_handler>
-  size_t node_server<t_payload_net_handler>::get_public_gray_peers_count()
+  size_t node_server<t_payload_net_handler>::get_public_known_peers_count()
   {
     auto public_zone = m_network_zones.find(epee::net_utils::zone::public_);
     if (public_zone == m_network_zones.end())
       return 0;
-    return public_zone->second.m_peerlist.get_gray_peers_count();
+    return public_zone->second.m_peerlist.get_known_peers_count();
   }
   //-----------------------------------------------------------------------------------
   template<class t_payload_net_handler>
-  void node_server<t_payload_net_handler>::get_public_peerlist(std::vector<peerlist_entry>& gray, std::vector<peerlist_entry>& white)
+  void node_server<t_payload_net_handler>::get_public_peerlist(std::vector<peerlist_entry>& known, std::vector<peerlist_entry>& recent)
   {
     auto public_zone = m_network_zones.find(epee::net_utils::zone::public_);
     if (public_zone != m_network_zones.end())
-      public_zone->second.m_peerlist.get_peerlist(gray, white);
+      public_zone->second.m_peerlist.get_peerlist(known, recent);
   }
   //-----------------------------------------------------------------------------------
   template<class t_payload_net_handler>
-  void node_server<t_payload_net_handler>::get_peerlist(std::vector<peerlist_entry>& gray, std::vector<peerlist_entry>& white)
+  void node_server<t_payload_net_handler>::get_peerlist(std::vector<peerlist_entry>& known, std::vector<peerlist_entry>& recent)
   {
     for (auto &zone: m_network_zones)
     {
-      zone.second.m_peerlist.get_peerlist(gray, white); // appends
+      zone.second.m_peerlist.get_peerlist(known, recent); // appends
     }
   }
   //-----------------------------------------------------------------------------------
@@ -1828,7 +1828,7 @@ namespace nodetool
   {
     m_peer_handshake_idle_maker_interval.do_call(boost::bind(&node_server<t_payload_net_handler>::peer_sync_idle_maker, this));
     m_connections_maker_interval.do_call(boost::bind(&node_server<t_payload_net_handler>::connections_maker, this));
-    m_gray_peerlist_housekeeping_interval.do_call(boost::bind(&node_server<t_payload_net_handler>::gray_peerlist_housekeeping, this));
+    m_known_peerlist_housekeeping_interval.do_call(boost::bind(&node_server<t_payload_net_handler>::known_peerlist_housekeeping, this));
     m_peerlist_store_interval.do_call(boost::bind(&node_server<t_payload_net_handler>::store_config, this));
     m_incoming_connections_interval.do_call(boost::bind(&node_server<t_payload_net_handler>::check_incoming_connections, this));
     return true;
@@ -2256,7 +2256,7 @@ namespace nodetool
     to use the random peer_id value to link the two. My initial thought is that
     the inbound peer should leave the other side marked as `<unknown tor host>`,
     etc., because someone could give faulty addresses over Tor/I2P to get the
-    real peer with that identity banned/blacklisted. */
+    real peer with that identity banned. */
 
     if(!context.m_is_income && zone.m_our_address.get_zone() == zone_type)
       rsp.local_peerlist_new.push_back(peerlist_entry{zone.m_our_address, zone.m_config.m_peer_id, std::time(nullptr)});
@@ -2357,7 +2357,7 @@ namespace nodetool
         pe.pruning_seed = context.m_pruning_seed;
         pe.rpc_port = context.m_rpc_port;
         pe.rpc_credits_per_hash = context.m_rpc_credits_per_hash;
-        this->m_network_zones.at(context.m_remote_address.get_zone()).m_peerlist.append_with_peer_white(pe);
+        this->m_network_zones.at(context.m_remote_address.get_zone()).m_peerlist.append_with_peer_recent(pe);
         LOG_DEBUG_CC(context, "PING SUCCESS " << context.m_remote_address.host_str() << ":" << port_l);
       });
     }
@@ -2389,11 +2389,11 @@ namespace nodetool
   template<class t_payload_net_handler>
   bool node_server<t_payload_net_handler>::log_peerlist()
   {
-    std::vector<peerlist_entry> pl_white;
-    std::vector<peerlist_entry> pl_gray;
+    std::vector<peerlist_entry> pl_recent;
+    std::vector<peerlist_entry> pl_known;
     for (auto& zone : m_network_zones)
-      zone.second.m_peerlist.get_peerlist(pl_gray, pl_white);
-    MINFO(ENDL << "Peerlist white:" << ENDL << print_peerlist_to_string(pl_white) << ENDL << "Peerlist gray:" << ENDL << print_peerlist_to_string(pl_gray) );
+      zone.second.m_peerlist.get_peerlist(pl_known, pl_recent);
+    MINFO(ENDL << "Peerlist recent:" << ENDL << print_peerlist_to_string(pl_recent) << ENDL << "Peerlist known:" << ENDL << print_peerlist_to_string(pl_known) );
     return true;
   }
   //-----------------------------------------------------------------------------------
@@ -2651,7 +2651,7 @@ namespace nodetool
   }
 
   template<class t_payload_net_handler>
-  bool node_server<t_payload_net_handler>::gray_peerlist_housekeeping()
+  bool node_server<t_payload_net_handler>::known_peerlist_housekeeping()
   {
     if (m_offline) return true;
     if (!m_exclusive_peers.empty()) return true;
@@ -2666,18 +2666,18 @@ namespace nodetool
         continue;
 
       peerlist_entry pe{};
-      if (!zone.second.m_peerlist.get_random_gray_peer(pe))
+      if (!zone.second.m_peerlist.get_random_known_peer(pe))
         continue;
 
       if (!check_connection_and_handshake_with_peer(pe.adr, pe.last_seen))
       {
-        zone.second.m_peerlist.remove_from_peer_gray(pe);
-        LOG_PRINT_L2("PEER EVICTED FROM GRAY PEER LIST: address: " << pe.adr.host_str() << " Peer ID: " << peerid_to_string(pe.id));
+        zone.second.m_peerlist.remove_from_peer_known(pe);
+        LOG_PRINT_L2("PEER EVICTED FROM known PEER LIST: address: " << pe.adr.host_str() << " Peer ID: " << peerid_to_string(pe.id));
       }
       else
       {
         zone.second.m_peerlist.set_peer_just_seen(pe.id, pe.adr, pe.pruning_seed, pe.rpc_port, pe.rpc_credits_per_hash);
-        LOG_PRINT_L2("PEER PROMOTED TO WHITE PEER LIST IP address: " << pe.adr.host_str() << " Peer ID: " << peerid_to_string(pe.id));
+        LOG_PRINT_L2("PEER PROMOTED TO RECENT PEER LIST IP address: " << pe.adr.host_str() << " Peer ID: " << peerid_to_string(pe.id));
       }
     }
     return true;

@@ -35,24 +35,24 @@ class bootstrap_node_selector : public ::testing::Test
 protected:
   void SetUp() override
   {
-    nodes.insert(white_nodes.begin(), white_nodes.end());
-    nodes.insert(gray_nodes.begin(), gray_nodes.end());
+    nodes.insert(recent_nodes.begin(), recent_nodes.end());
+    nodes.insert(known_nodes.begin(), known_nodes.end());
   }
 
-  const std::map<std::string, bool> white_nodes = {
+  const std::map<std::string, bool> recent_nodes = {
     {
-      "white_node_1:18089", true
+      "recent_node_1:18089", true
     },
     {
-      "white_node_2:18081", true
+      "recent_node_2:18081", true
     }
   };
-  const std::map<std::string, bool> gray_nodes = {
+  const std::map<std::string, bool> known_nodes = {
     {
-      "gray_node_1:18081", false
+      "known_node_1:18081", false
     },
     {
-      "gray_node_2:18089", false
+      "known_node_2:18089", false
     }
   };
 
@@ -95,7 +95,7 @@ TEST_F(bootstrap_node_selector, selector_auto_success)
     selector.handle_result(current->address, true);
 
     current = selector.next_node();
-    EXPECT_TRUE(white_nodes.count(current->address) > 0);
+    EXPECT_TRUE(recent_nodes.count(current->address) > 0);
   }
 }
 
@@ -117,7 +117,7 @@ TEST_F(bootstrap_node_selector, selector_auto_failure)
   }
 }
 
-TEST_F(bootstrap_node_selector, selector_auto_white_nodes_first)
+TEST_F(bootstrap_node_selector, selector_auto_recent_nodes_first)
 {
   cryptonote::bootstrap_node::selector_auto selector([this]() {
     return nodes;
@@ -125,18 +125,18 @@ TEST_F(bootstrap_node_selector, selector_auto_white_nodes_first)
 
   for (size_t iterations = 0; iterations < 2; ++iterations)
   {
-    for (size_t fails = 0; fails < white_nodes.size(); ++fails)
+    for (size_t fails = 0; fails < recent_nodes.size(); ++fails)
     {
       const auto current = selector.next_node();
-      EXPECT_TRUE(white_nodes.count(current->address) > 0);
+      EXPECT_TRUE(recent_nodes.count(current->address) > 0);
 
       selector.handle_result(current->address, false);
     }
 
-    for (size_t fails = 0; fails < gray_nodes.size(); ++fails)
+    for (size_t fails = 0; fails < known_nodes.size(); ++fails)
     {
       const auto current = selector.next_node();
-      EXPECT_TRUE(gray_nodes.count(current->address) > 0);
+      EXPECT_TRUE(known_nodes.count(current->address) > 0);
 
       selector.handle_result(current->address, false);
     }

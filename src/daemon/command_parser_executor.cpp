@@ -50,24 +50,24 @@ bool t_command_parser_executor::print_peer_list(const std::vector<std::string>& 
 {
   if (args.size() > 3)
   {
-    std::cout << "use: print_pl [white] [gray] [<limit>] [pruned] [publicrpc]" << std::endl;
+    std::cout << "use: print_pl [recent] [known] [<limit>] [pruned] [publicrpc]" << std::endl;
     return true;
   }
 
-  bool white = false;
-  bool gray = false;
+  bool recent = false;
+  bool known = false;
   bool pruned = false;
   bool publicrpc = false;
   size_t limit = 0;
   for (size_t i = 0; i < args.size(); ++i)
   {
-    if (args[i] == "white")
+    if (args[i] == "recent")
     {
-      white = true;
+      recent = true;
     }
-    else if (args[i] == "gray")
+    else if (args[i] == "known")
     {
-      gray = true;
+      known = true;
     }
     else if (args[i] == "pruned")
     {
@@ -84,8 +84,8 @@ bool t_command_parser_executor::print_peer_list(const std::vector<std::string>& 
     }
   }
 
-  const bool print_both = !white && !gray;
-  return m_executor.print_peer_list(white | print_both, gray | print_both, limit, pruned, publicrpc);
+  const bool print_both = !recent && !known;
+  return m_executor.print_peer_list(recent | print_both, known | print_both, limit, pruned, publicrpc);
 }
 
 bool t_command_parser_executor::print_peer_list_stats(const std::vector<std::string>& args)

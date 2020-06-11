@@ -300,10 +300,10 @@ class Daemon(object):
         }
         return self.rpc.send_request('/set_bootstrap_daemon', set_bootstrap_daemon)
 
-    def get_public_nodes(self, gray = False, white = True):
+    def get_public_nodes(self, known = False, recent = True):
         get_public_nodes = {
-            'gray': gray,
-            'white': white,
+            'known': known,
+            'recent': recent,
         }
         return self.rpc.send_request('/get_public_nodes', get_public_nodes)
 

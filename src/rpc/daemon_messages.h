@@ -294,8 +294,8 @@ BEGIN_RPC_MESSAGE_CLASS(GetPeerList);
   BEGIN_RPC_MESSAGE_REQUEST;
   END_RPC_MESSAGE_REQUEST;
   BEGIN_RPC_MESSAGE_RESPONSE;
-    RPC_MESSAGE_MEMBER(std::vector<peer>, white_list);
-    RPC_MESSAGE_MEMBER(std::vector<peer>, gray_list);
+    RPC_MESSAGE_MEMBER(std::vector<peer>, recent_list);
+    RPC_MESSAGE_MEMBER(std::vector<peer>, known_list);
   END_RPC_MESSAGE_RESPONSE;
 END_RPC_MESSAGE_CLASS;
 

@@ -661,8 +661,8 @@ namespace cryptonote
       uint64_t outgoing_connections_count;
       uint64_t incoming_connections_count;
       uint64_t rpc_connections_count;
-      uint64_t white_peerlist_size;
-      uint64_t grey_peerlist_size;
+      uint64_t recent_peerlist_size;
+      uint64_t known_peerlist_size;
       bool mainnet;
       bool testnet;
       bool stagenet;
@@ -699,8 +699,8 @@ namespace cryptonote
         KV_SERIALIZE(outgoing_connections_count)
         KV_SERIALIZE(incoming_connections_count)
         KV_SERIALIZE(rpc_connections_count)
-        KV_SERIALIZE(white_peerlist_size)
-        KV_SERIALIZE(grey_peerlist_size)
+        KV_SERIALIZE(recent_peerlist_size)
+        KV_SERIALIZE(known_peerlist_size)
         KV_SERIALIZE(mainnet)
         KV_SERIALIZE(testnet)
         KV_SERIALIZE(stagenet)
@@ -1199,13 +1199,13 @@ namespace cryptonote
 
     struct response_t: public rpc_response_base
     {
-      std::vector<peer> white_list;
-      std::vector<peer> gray_list;
+      std::vector<peer> recent_list;
+      std::vector<peer> known_list;
 
       BEGIN_KV_SERIALIZE_MAP()
         KV_SERIALIZE_PARENT(rpc_response_base)
-        KV_SERIALIZE(white_list)
-        KV_SERIALIZE(gray_list)
+        KV_SERIALIZE(recent_list)
+        KV_SERIALIZE(known_list)
       END_KV_SERIALIZE_MAP()
     };
     typedef epee::misc_utils::struct_init<response_t> response;
@@ -1236,26 +1236,26 @@ namespace cryptonote
   {
     struct request_t: public rpc_request_base
     {
-      bool gray;
-      bool white;
+      bool known;
+      bool recent;
 
       BEGIN_KV_SERIALIZE_MAP()
         KV_SERIALIZE_PARENT(rpc_request_base)
-        KV_SERIALIZE_OPT(gray, false)
-        KV_SERIALIZE_OPT(white, true)
+        KV_SERIALIZE_OPT(known, false)
+        KV_SERIALIZE_OPT(recent, true)
       END_KV_SERIALIZE_MAP()
     };
     typedef epee::misc_utils::struct_init<request_t> request;
 
     struct response_t: public rpc_response_base
     {
-      std::vector<public_node> gray;
-      std::vector<public_node> white;
+      std::vector<public_node> known;
+      std::vector<public_node> recent;
 
       BEGIN_KV_SERIALIZE_MAP()
         KV_SERIALIZE_PARENT(rpc_response_base)
-        KV_SERIALIZE(gray)
-        KV_SERIALIZE(white)
+        KV_SERIALIZE(known)
+        KV_SERIALIZE(recent)
       END_KV_SERIALIZE_MAP()
     };
     typedef epee::misc_utils::struct_init<response_t> response;

@@ -121,8 +121,8 @@
 
 #define COMMAND_RPC_GET_BLOCKS_FAST_MAX_COUNT           1000
 
-#define P2P_LOCAL_WHITE_PEERLIST_LIMIT                  1000
-#define P2P_LOCAL_GRAY_PEERLIST_LIMIT                   5000
+#define P2P_LOCAL_RECENT_PEERS_LIMIT                    1000
+#define P2P_LOCAL_KNOWN_PEERS_LIMIT                     5000
 
 #define P2P_DEFAULT_CONNECTIONS_COUNT                   8
 #define P2P_DEFAULT_HANDSHAKE_INTERVAL                  60           //secondes
@@ -133,7 +133,7 @@
 #define P2P_DEFAULT_PING_CONNECTION_TIMEOUT             2000       //2 seconds
 #define P2P_DEFAULT_INVOKE_TIMEOUT                      60*2*1000  //2 minutes
 #define P2P_DEFAULT_HANDSHAKE_INVOKE_TIMEOUT            5000       //5 seconds
-#define P2P_DEFAULT_WHITELIST_CONNECTIONS_PERCENT       70
+#define P2P_DEFAULT_RECENT_PEERS_CONNECTIONS_PERCENT    70
 #define P2P_DEFAULT_ANCHOR_CONNECTIONS_COUNT            2
 #define P2P_DEFAULT_SYNC_SEARCH_CONNECTIONS_COUNT       2
 #define P2P_DEFAULT_LIMIT_RATE_UP                       2048       // kB/s

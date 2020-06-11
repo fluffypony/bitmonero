@@ -90,8 +90,8 @@ namespace bootstrap_node
     for (const auto &node : m_get_nodes())
     {
       const auto &address = node.first;
-      const auto &white = node.second;
-      const size_t initial_score = white ? 0 : 1;
+      const auto &recent = node.second;
+      const size_t initial_score = recent ? 0 : 1;
       updated |= m_nodes.get<by_address>().insert({address, initial_score}).second;
     }
 

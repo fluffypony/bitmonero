@@ -418,14 +418,14 @@ void GetPeerList::Request::fromJson(const rapidjson::Value& val)
 
 void GetPeerList::Response::doToJson(rapidjson::Writer<epee::byte_stream>& dest) const
 {
-  INSERT_INTO_JSON_OBJECT(dest, white_list, white_list);
-  INSERT_INTO_JSON_OBJECT(dest, gray_list, gray_list);
+  INSERT_INTO_JSON_OBJECT(dest, recent_list, recent_list);
+  INSERT_INTO_JSON_OBJECT(dest, known_list, known_list);
 }
 
 void GetPeerList::Response::fromJson(const rapidjson::Value& val)
 {
-  GET_FROM_JSON_OBJECT(val, white_list, white_list);
-  GET_FROM_JSON_OBJECT(val, gray_list, gray_list);
+  GET_FROM_JSON_OBJECT(val, recent_list, recent_list);
+  GET_FROM_JSON_OBJECT(val, known_list, known_list);
 }
 
 

@@ -39,24 +39,24 @@ TEST(peer_list, peer_list_general)
   nodetool::peerlist_manager plm;
   plm.init(nodetool::peerlist_types{}, false);
 #define MAKE_IPV4_ADDRESS(a,b,c,d,e) epee::net_utils::ipv4_network_address{MAKE_IP(a,b,c,d),e}
-#define ADD_GRAY_NODE(addr_, id_, last_seen_) {  nodetool::peerlist_entry ple; ple.last_seen=last_seen_;ple.adr = addr_; ple.id = id_;plm.append_with_peer_gray(ple);}  
-#define ADD_WHITE_NODE(addr_, id_, last_seen_) {  nodetool::peerlist_entry ple;ple.last_seen=last_seen_; ple.adr = addr_; ple.id = id_;plm.append_with_peer_white(ple);}  
+#define ADD_KNOWN_NODE(addr_, id_, last_seen_) {  nodetool::peerlist_entry ple; ple.last_seen=last_seen_;ple.adr = addr_; ple.id = id_;plm.append_with_peer_known(ple);}  
+#define ADD_RECENT_NODE(addr_, id_, last_seen_) {  nodetool::peerlist_entry ple;ple.last_seen=last_seen_; ple.adr = addr_; ple.id = id_;plm.append_with_peer_recent(ple);}  
 
 #define PRINT_HEAD(step) {std::vector<nodetool::peerlist_entry> bs_head; bool r = plm.get_peerlist_head(bs_head, 100);std::cout << "step " << step << ": " << bs_head.size() << std::endl;}
 
-  ADD_GRAY_NODE(MAKE_IPV4_ADDRESS(123,43,12,1, 8080), 121241, 34345);
-  ADD_GRAY_NODE(MAKE_IPV4_ADDRESS(123,43,12,2, 8080), 121241, 34345);
-  ADD_GRAY_NODE(MAKE_IPV4_ADDRESS(123,43,12,3, 8080), 121241, 34345);
-  ADD_GRAY_NODE(MAKE_IPV4_ADDRESS(123,43,12,4, 8080), 121241, 34345);
-  ADD_GRAY_NODE(MAKE_IPV4_ADDRESS(123,43,12,5, 8080), 121241, 34345);
+  ADD_KNOWN_NODE(MAKE_IPV4_ADDRESS(123,43,12,1, 8080), 121241, 34345);
+  ADD_KNOWN_NODE(MAKE_IPV4_ADDRESS(123,43,12,2, 8080), 121241, 34345);
+  ADD_KNOWN_NODE(MAKE_IPV4_ADDRESS(123,43,12,3, 8080), 121241, 34345);
+  ADD_KNOWN_NODE(MAKE_IPV4_ADDRESS(123,43,12,4, 8080), 121241, 34345);
+  ADD_KNOWN_NODE(MAKE_IPV4_ADDRESS(123,43,12,5, 8080), 121241, 34345);
 
-  ADD_WHITE_NODE(MAKE_IPV4_ADDRESS(123,43,12,1, 8080), 121241, 34345);
-  ADD_WHITE_NODE(MAKE_IPV4_ADDRESS(123,43,12,2, 8080), 121241, 34345);
-  ADD_WHITE_NODE(MAKE_IPV4_ADDRESS(123,43,12,3, 8080), 121241, 34345);
-  ADD_WHITE_NODE(MAKE_IPV4_ADDRESS(123,43,12,4, 8080), 121241, 34345);
+  ADD_RECENT_NODE(MAKE_IPV4_ADDRESS(123,43,12,1, 8080), 121241, 34345);
+  ADD_RECENT_NODE(MAKE_IPV4_ADDRESS(123,43,12,2, 8080), 121241, 34345);
+  ADD_RECENT_NODE(MAKE_IPV4_ADDRESS(123,43,12,3, 8080), 121241, 34345);
+  ADD_RECENT_NODE(MAKE_IPV4_ADDRESS(123,43,12,4, 8080), 121241, 34345);
 
-  size_t gray_list_size = plm.get_gray_peers_count();
-  ASSERT_EQ(gray_list_size, 1);
+  size_t known_list_size = plm.get_known_peers_count();
+  ASSERT_EQ(known_list_size, 1);
 
   std::vector<nodetool::peerlist_entry> bs_head;
   bool r = plm.get_peerlist_head(bs_head, 100);
@@ -66,9 +66,9 @@ TEST(peer_list, peer_list_general)
   ASSERT_EQ(bs_head.size(), 4);
 
 
-  ADD_GRAY_NODE(MAKE_IPV4_ADDRESS(123,43,12,5, 8080), 121241, 34345);
-  ASSERT_EQ(plm.get_gray_peers_count(), 1);
-  ASSERT_EQ(plm.get_white_peers_count(), 4);
+  ADD_KNOWN_NODE(MAKE_IPV4_ADDRESS(123,43,12,5, 8080), 121241, 34345);
+  ASSERT_EQ(plm.get_known_peers_count(), 1);
+  ASSERT_EQ(plm.get_recent_peers_count(), 4);
 }
 
 
@@ -90,10 +90,10 @@ namespace
     for (const epee::net_utils::zone zone : zones)
     {
       const nodetool::peerlist_types types{peers.take_zone(zone)};
-      EXPECT_TRUE(types.white.empty());
-      EXPECT_TRUE(types.gray.empty());
+      EXPECT_TRUE(types.recent.empty());
+      EXPECT_TRUE(types.known.empty());
       EXPECT_TRUE(types.anchor.empty());
-      pass = (types.white.empty() && types.gray.empty() && types.anchor.empty());
+      pass = (types.recent.empty() && types.known.empty() && types.anchor.empty());
     }
     return pass;
   }
@@ -111,10 +111,10 @@ TEST(peerlist_storage, store)
   std::string buffer{};
   {
     nodetool::peerlist_types types{};
-    types.white.push_back({epee::net_utils::ipv4_network_address{1000, 10}, 44, 55});
-    types.white.push_back({net::tor_address::unknown(), 64, 75});
-    types.gray.push_back({net::tor_address::unknown(), 99, 88});
-    types.gray.push_back({epee::net_utils::ipv4_network_address{2000, 20}, 84, 45});
+    types.recent.push_back({epee::net_utils::ipv4_network_address{1000, 10}, 44, 55});
+    types.recent.push_back({net::tor_address::unknown(), 64, 75});
+    types.known.push_back({net::tor_address::unknown(), 99, 88});
+    types.known.push_back({epee::net_utils::ipv4_network_address{2000, 20}, 84, 45});
     types.anchor.push_back({epee::net_utils::ipv4_network_address{999, 654}, 444, 555});
     types.anchor.push_back({net::tor_address::unknown(), 14, 33});
     types.anchor.push_back({net::tor_address::unknown(), 24, 22});
@@ -136,19 +136,19 @@ TEST(peerlist_storage, store)
   nodetool::peerlist_types types = peers.take_zone(zone::public_);
   EXPECT_TRUE(check_empty(peers, {zone::invalid, zone::public_, zone::i2p}));
 
-  ASSERT_EQ(1u, types.white.size());
-  ASSERT_EQ(address_type::ipv4, types.white[0].adr.get_type_id());
-  EXPECT_EQ(1000u, types.white[0].adr.template as<epee::net_utils::ipv4_network_address>().ip());
-  EXPECT_EQ(10u, types.white[0].adr.template as<epee::net_utils::ipv4_network_address>().port());
-  EXPECT_EQ(44u, types.white[0].id);
-  EXPECT_EQ(55u, types.white[0].last_seen);
+  ASSERT_EQ(1u, types.recent.size());
+  ASSERT_EQ(address_type::ipv4, types.recent[0].adr.get_type_id());
+  EXPECT_EQ(1000u, types.recent[0].adr.template as<epee::net_utils::ipv4_network_address>().ip());
+  EXPECT_EQ(10u, types.recent[0].adr.template as<epee::net_utils::ipv4_network_address>().port());
+  EXPECT_EQ(44u, types.recent[0].id);
+  EXPECT_EQ(55u, types.recent[0].last_seen);
 
-  ASSERT_EQ(1u, types.gray.size());
-  ASSERT_EQ(address_type::ipv4, types.gray[0].adr.get_type_id());
-  EXPECT_EQ(2000u, types.gray[0].adr.template as<epee::net_utils::ipv4_network_address>().ip());
-  EXPECT_EQ(20u, types.gray[0].adr.template as<epee::net_utils::ipv4_network_address>().port());
-  EXPECT_EQ(84u, types.gray[0].id);
-  EXPECT_EQ(45u, types.gray[0].last_seen);
+  ASSERT_EQ(1u, types.known.size());
+  ASSERT_EQ(address_type::ipv4, types.known[0].adr.get_type_id());
+  EXPECT_EQ(2000u, types.known[0].adr.template as<epee::net_utils::ipv4_network_address>().ip());
+  EXPECT_EQ(20u, types.known[0].adr.template as<epee::net_utils::ipv4_network_address>().port());
+  EXPECT_EQ(84u, types.known[0].id);
+  EXPECT_EQ(45u, types.known[0].last_seen);
 
   ASSERT_EQ(1u, types.anchor.size());
   ASSERT_EQ(address_type::ipv4, types.anchor[0].adr.get_type_id());
@@ -166,19 +166,19 @@ TEST(peerlist_storage, store)
   types = peers.take_zone(zone::tor);
   EXPECT_TRUE(check_empty(peers, {zone::invalid, zone::public_, zone::i2p, zone::tor}));
 
-  ASSERT_EQ(1u, types.white.size());
-  ASSERT_EQ(address_type::tor, types.white[0].adr.get_type_id());
-  EXPECT_STREQ(net::tor_address::unknown_str(), types.white[0].adr.template as<net::tor_address>().host_str());
-  EXPECT_EQ(0u, types.white[0].adr.template as<net::tor_address>().port());
-  EXPECT_EQ(64u, types.white[0].id);
-  EXPECT_EQ(75u, types.white[0].last_seen);
+  ASSERT_EQ(1u, types.recent.size());
+  ASSERT_EQ(address_type::tor, types.recent[0].adr.get_type_id());
+  EXPECT_STREQ(net::tor_address::unknown_str(), types.recent[0].adr.template as<net::tor_address>().host_str());
+  EXPECT_EQ(0u, types.recent[0].adr.template as<net::tor_address>().port());
+  EXPECT_EQ(64u, types.recent[0].id);
+  EXPECT_EQ(75u, types.recent[0].last_seen);
 
-  ASSERT_EQ(1u, types.gray.size());
-  ASSERT_EQ(address_type::tor, types.gray[0].adr.get_type_id());
-  EXPECT_STREQ(net::tor_address::unknown_str(), types.gray[0].adr.template as<net::tor_address>().host_str());
-  EXPECT_EQ(0u, types.gray[0].adr.template as<net::tor_address>().port());
-  EXPECT_EQ(99u, types.gray[0].id);
-  EXPECT_EQ(88u, types.gray[0].last_seen);
+  ASSERT_EQ(1u, types.known.size());
+  ASSERT_EQ(address_type::tor, types.known[0].adr.get_type_id());
+  EXPECT_STREQ(net::tor_address::unknown_str(), types.known[0].adr.template as<net::tor_address>().host_str());
+  EXPECT_EQ(0u, types.known[0].adr.template as<net::tor_address>().port());
+  EXPECT_EQ(99u, types.known[0].id);
+  EXPECT_EQ(88u, types.known[0].last_seen);
 
   ASSERT_EQ(2u, types.anchor.size());
   ASSERT_EQ(address_type::tor, types.anchor[0].adr.get_type_id());
@@ -204,19 +204,19 @@ TEST(peerlist_storage, store)
   types = peers.take_zone(zone::public_);
   EXPECT_TRUE(check_empty(peers, {zone::invalid, zone::public_, zone::i2p}));
 
-  ASSERT_EQ(1u, types.white.size());
-  ASSERT_EQ(address_type::ipv4, types.white[0].adr.get_type_id());
-  EXPECT_EQ(1000u, types.white[0].adr.template as<epee::net_utils::ipv4_network_address>().ip());
-  EXPECT_EQ(10u, types.white[0].adr.template as<epee::net_utils::ipv4_network_address>().port());
-  EXPECT_EQ(44u, types.white[0].id);
-  EXPECT_EQ(55u, types.white[0].last_seen);
+  ASSERT_EQ(1u, types.recent.size());
+  ASSERT_EQ(address_type::ipv4, types.recent[0].adr.get_type_id());
+  EXPECT_EQ(1000u, types.recent[0].adr.template as<epee::net_utils::ipv4_network_address>().ip());
+  EXPECT_EQ(10u, types.recent[0].adr.template as<epee::net_utils::ipv4_network_address>().port());
+  EXPECT_EQ(44u, types.recent[0].id);
+  EXPECT_EQ(55u, types.recent[0].last_seen);
 
-  ASSERT_EQ(1u, types.gray.size());
-  ASSERT_EQ(address_type::ipv4, types.gray[0].adr.get_type_id());
-  EXPECT_EQ(2000u, types.gray[0].adr.template as<epee::net_utils::ipv4_network_address>().ip());
-  EXPECT_EQ(20u, types.gray[0].adr.template as<epee::net_utils::ipv4_network_address>().port());
-  EXPECT_EQ(84u, types.gray[0].id);
-  EXPECT_EQ(45u, types.gray[0].last_seen);
+  ASSERT_EQ(1u, types.known.size());
+  ASSERT_EQ(address_type::ipv4, types.known[0].adr.get_type_id());
+  EXPECT_EQ(2000u, types.known[0].adr.template as<epee::net_utils::ipv4_network_address>().ip());
+  EXPECT_EQ(20u, types.known[0].adr.template as<epee::net_utils::ipv4_network_address>().port());
+  EXPECT_EQ(84u, types.known[0].id);
+  EXPECT_EQ(45u, types.known[0].last_seen);
 
   ASSERT_EQ(1u, types.anchor.size());
   ASSERT_EQ(address_type::ipv4, types.anchor[0].adr.get_type_id());
@@ -228,19 +228,19 @@ TEST(peerlist_storage, store)
   types = peers.take_zone(zone::tor);
   EXPECT_TRUE(check_empty(peers, {zone::invalid, zone::public_, zone::i2p, zone::tor}));
 
-  ASSERT_EQ(1u, types.white.size());
-  ASSERT_EQ(address_type::tor, types.white[0].adr.get_type_id());
-  EXPECT_STREQ(net::tor_address::unknown_str(), types.white[0].adr.template as<net::tor_address>().host_str());
-  EXPECT_EQ(0u, types.white[0].adr.template as<net::tor_address>().port());
-  EXPECT_EQ(64u, types.white[0].id);
-  EXPECT_EQ(75u, types.white[0].last_seen);
+  ASSERT_EQ(1u, types.recent.size());
+  ASSERT_EQ(address_type::tor, types.recent[0].adr.get_type_id());
+  EXPECT_STREQ(net::tor_address::unknown_str(), types.recent[0].adr.template as<net::tor_address>().host_str());
+  EXPECT_EQ(0u, types.recent[0].adr.template as<net::tor_address>().port());
+  EXPECT_EQ(64u, types.recent[0].id);
+  EXPECT_EQ(75u, types.recent[0].last_seen);
 
-  ASSERT_EQ(1u, types.gray.size());
-  ASSERT_EQ(address_type::tor, types.gray[0].adr.get_type_id());
-  EXPECT_STREQ(net::tor_address::unknown_str(), types.gray[0].adr.template as<net::tor_address>().host_str());
-  EXPECT_EQ(0u, types.gray[0].adr.template as<net::tor_address>().port());
-  EXPECT_EQ(99u, types.gray[0].id);
-  EXPECT_EQ(88u, types.gray[0].last_seen);
+  ASSERT_EQ(1u, types.known.size());
+  ASSERT_EQ(address_type::tor, types.known[0].adr.get_type_id());
+  EXPECT_STREQ(net::tor_address::unknown_str(), types.known[0].adr.template as<net::tor_address>().host_str());
+  EXPECT_EQ(0u, types.known[0].adr.template as<net::tor_address>().port());
+  EXPECT_EQ(99u, types.known[0].id);
+  EXPECT_EQ(88u, types.known[0].last_seen);
 
   ASSERT_EQ(2u, types.anchor.size());
   ASSERT_EQ(address_type::tor, types.anchor[0].adr.get_type_id());

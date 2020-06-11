@@ -138,8 +138,8 @@ namespace nodetool
   template<typename Archive>
   void serialize(Archive& a, peerlist_types& elem, unsigned ver)
   {
-    elem.white = load_peers<peerlist_entry>(a, ver);
-    elem.gray = load_peers<peerlist_entry>(a, ver);
+    elem.recent = load_peers<peerlist_entry>(a, ver);
+    elem.known = load_peers<peerlist_entry>(a, ver);
     elem.anchor = load_peers<anchor_peerlist_entry>(a, ver);
 
     if (ver == 0)
@@ -153,8 +153,8 @@ namespace nodetool
   template<typename Archive>
   void serialize(Archive& a, peerlist_join elem, unsigned ver)
   {
-    save_peers(a, boost::range::join(elem.ours.white, elem.other.white));
-    save_peers(a, boost::range::join(elem.ours.gray, elem.other.gray));
+    save_peers(a, boost::range::join(elem.ours.recent, elem.other.recent));
+    save_peers(a, boost::range::join(elem.ours.known, elem.other.known));
     save_peers(a, boost::range::join(elem.ours.anchor, elem.other.anchor));
   }
 
@@ -176,8 +176,8 @@ namespace nodetool
 
       if (src.good())
       {
-        std::sort(out.m_types.white.begin(), out.m_types.white.end(), by_zone{});
-        std::sort(out.m_types.gray.begin(), out.m_types.gray.end(), by_zone{});
+        std::sort(out.m_types.recent.begin(), out.m_types.recent.end(), by_zone{});
+        std::sort(out.m_types.known.begin(), out.m_types.known.end(), by_zone{});
         std::sort(out.m_types.anchor.begin(), out.m_types.anchor.end(), by_zone{});
         return {std::move(out)};
       }
@@ -250,8 +250,8 @@ namespace nodetool
   peerlist_types peerlist_storage::take_zone(epee::net_utils::zone zone)
   {
     peerlist_types out{};
-    out.white = do_take_zone(m_types.white, zone);
-    out.gray = do_take_zone(m_types.gray, zone);
+    out.recent = do_take_zone(m_types.recent, zone);
+    out.known = do_take_zone(m_types.known, zone);
     out.anchor = do_take_zone(m_types.anchor, zone);
     return out;
   }
@@ -260,32 +260,32 @@ namespace nodetool
   {
     CRITICAL_REGION_LOCAL(m_peerlist_lock);
 
-    if (!m_peers_white.empty() || !m_peers_gray.empty() || !m_peers_anchor.empty())
+    if (!m_peers_recent.empty() || !m_peers_known.empty() || !m_peers_anchor.empty())
       return false;
 
-    add_peers(m_peers_white.get<by_addr>(), std::move(peers.white));
-    add_peers(m_peers_gray.get<by_addr>(), std::move(peers.gray));
+    add_peers(m_peers_recent.get<by_addr>(), std::move(peers.recent));
+    add_peers(m_peers_known.get<by_addr>(), std::move(peers.known));
     add_peers(m_peers_anchor.get<by_addr>(), std::move(peers.anchor));
     m_allow_local_ip = allow_local_ip;
     return true;
   }
 
-  void peerlist_manager::get_peerlist(std::vector<peerlist_entry>& pl_gray, std::vector<peerlist_entry>& pl_white)
+  void peerlist_manager::get_peerlist(std::vector<peerlist_entry>& pl_known, std::vector<peerlist_entry>& pl_recent)
   {
     CRITICAL_REGION_LOCAL(m_peerlist_lock);
-    copy_peers(pl_gray, m_peers_gray.get<by_addr>());
-    copy_peers(pl_white, m_peers_white.get<by_addr>());
+    copy_peers(pl_known, m_peers_known.get<by_addr>());
+    copy_peers(pl_recent, m_peers_recent.get<by_addr>());
   }
 
   void peerlist_manager::get_peerlist(peerlist_types& peers)
   { 
     CRITICAL_REGION_LOCAL(m_peerlist_lock);
-    peers.white.reserve(peers.white.size() + m_peers_white.size());
-    peers.gray.reserve(peers.gray.size() + m_peers_gray.size());
+    peers.recent.reserve(peers.recent.size() + m_peers_recent.size());
+    peers.known.reserve(peers.known.size() + m_peers_known.size());
     peers.anchor.reserve(peers.anchor.size() + m_peers_anchor.size());
 
-    copy_peers(peers.white, m_peers_white.get<by_addr>());
-    copy_peers(peers.gray, m_peers_gray.get<by_addr>());
+    copy_peers(peers.recent, m_peers_recent.get<by_addr>());
+    copy_peers(peers.known, m_peers_known.get<by_addr>());
     copy_peers(peers.anchor, m_peers_anchor.get<by_addr>());
   }
 }

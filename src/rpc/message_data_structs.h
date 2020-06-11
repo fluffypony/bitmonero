@@ -184,8 +184,8 @@ namespace rpc
     uint64_t alt_blocks_count;
     uint64_t outgoing_connections_count;
     uint64_t incoming_connections_count;
-    uint64_t white_peerlist_size;
-    uint64_t grey_peerlist_size;
+    uint64_t recent_peerlist_size;
+    uint64_t known_peerlist_size;
     bool mainnet;
     bool testnet;
     bool stagenet;
