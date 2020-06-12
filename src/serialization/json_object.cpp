@@ -1291,7 +1291,7 @@ void toJsonValue(rapidjson::Writer<epee::byte_stream>& dest, const cryptonote::r
   INSERT_INTO_JSON_OBJECT(dest, alt_blocks_count, info.alt_blocks_count);
   INSERT_INTO_JSON_OBJECT(dest, outgoing_connections_count, info.outgoing_connections_count);
   INSERT_INTO_JSON_OBJECT(dest, incoming_connections_count, info.incoming_connections_count);
-  INSERT_INTO_JSON_OBJECT(dest, recent_peers_size, info.recent_peers_size);
+  INSERT_INTO_JSON_OBJECT(dest, recent_peerlist_size, info.recent_peerlist_size);
   INSERT_INTO_JSON_OBJECT(dest, known_peerlist_size, info.known_peerlist_size);
   INSERT_INTO_JSON_OBJECT(dest, mainnet, info.mainnet);
   INSERT_INTO_JSON_OBJECT(dest, testnet, info.testnet);
@@ -1324,7 +1324,7 @@ void fromJsonValue(const rapidjson::Value& val, cryptonote::rpc::DaemonInfo& inf
   GET_FROM_JSON_OBJECT(val, info.alt_blocks_count, alt_blocks_count);
   GET_FROM_JSON_OBJECT(val, info.outgoing_connections_count, outgoing_connections_count);
   GET_FROM_JSON_OBJECT(val, info.incoming_connections_count, incoming_connections_count);
-  GET_FROM_JSON_OBJECT(val, info.recent_peers_size, recent_peers_size);
+  GET_FROM_JSON_OBJECT(val, info.recent_peerlist_size, recent_peerlist_size);
   GET_FROM_JSON_OBJECT(val, info.known_peerlist_size, known_peerlist_size);
   GET_FROM_JSON_OBJECT(val, info.mainnet, mainnet);
   GET_FROM_JSON_OBJECT(val, info.testnet, testnet);
